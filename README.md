@@ -51,7 +51,7 @@ This is a REST API endpoint that calculates a SHIELD Sleep Score and biological 
 1.  **Clone the repository:**
 
     ```
-    git clone <your-backend-repo-url>
+    git clone git@github.com:soumiksarkar/shield-sleep-api.git
     cd shield-sleep-api
     ```
 
