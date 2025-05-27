@@ -113,3 +113,13 @@ curl -X POST -H "Content-Type: application/json" -d '{ "totalSleepHours": 5.5, "
   ]
 }
 ```
+
+### Deploy a Live Demo (Backend Specifics)
+
+For backend deployment, you would typically use cloud platforms designed for Java applications:
+
+* **Cloud Platforms:** Heroku, AWS Elastic Beanstalk / EC2, Google Cloud App Engine / Compute Engine, Azure App Service.
+
+* **Containerization (Docker):** Packaging your Spring Boot app into a Docker image is highly recommended for consistent deployments.
+
+* **Database:** For a production backend, you would typically connect to a persistent database (e.g., PostgreSQL, MySQL) hosted on a cloud provider, not an in-memory database.
