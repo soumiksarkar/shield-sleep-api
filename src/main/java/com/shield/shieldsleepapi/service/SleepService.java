@@ -8,73 +8,107 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.List;
 
-@Service
 @Slf4j
+@Service
 public class SleepService {
 
     /**
-     * Calculates the SHIELD Sleep Score and biological age delta based on provided sleep data.
+     * Calculates the SHIELD Sleep Score and Bio-Age Delta based on provided sleep data.
+     * This method contains hardcoded rules for demonstration purposes.
+     * In a real-world scenario, this logic would likely be powered by a machine learning model
+     * that learns dynamic weights and relationships from a large dataset.
      *
-     * @param sleepData An object containing total sleep hours, sleep efficiency, REM percentage, age, and sex.
-     * @return A SleepScoreResponse object containing the calculated score, bio-age delta, alerts, and suggestions.
+     * @param sleepData The sleep data provided by the user.
+     * @return A SleepScoreResponse containing the score, bio-age delta, alerts, and suggestions.
      */
-    public SleepScoreResponse calculateSleepScore(SleepData sleepData) {
-        // Initialize base score to 100
-        int shieldScore = 100;
+    public SleepScoreResponse calculateShieldScore(SleepData sleepData) {
+        int score = 100; // Start with a perfect score
         List<String> alerts = new ArrayList<>();
         List<String> suggestions = new ArrayList<>();
 
-        // Apply scoring rules based on the assignment specifications
+        // --- Rule-based Scoring and Alerts (Simulated ML Integration) ---
+        // This is a simplified rule engine. An ML model would learn these complex relationships
+        // and adjust 'weights' (feature importance) dynamically based on actual health outcomes.
 
-        // Rule 1: IF total_sleep_hours < 6 THEN deduct 10 points
+        // 1. Total Sleep Hours
+        // Recommended sleep hours: 7-9 hours for adults
         if (sleepData.getTotalSleepHours() < 6) {
-            shieldScore -= 10;
-            alerts.add("Insufficient total sleep hours");
-            suggestions.add("Aim for 7-9 hours of sleep per night for optimal health.");
+            score -= 15;
+            alerts.add("Insufficient total sleep hours.");
+            suggestions.add("Aim for 7-9 hours of sleep per night for optimal health. Establish a consistent bedtime and wake-up time.");
+            if (sleepData.getAge() >= 65 && sleepData.getTotalSleepHours() < 5) { // More severe for older adults
+                score -= 10;
+                alerts.add("Critically low sleep for older adult.");
+                suggestions.add("For older adults, consistently less than 6 hours can be detrimental. Consider consulting a doctor if sleep issues persist.");
+            }
+        } else if (sleepData.getTotalSleepHours() > 9.5) {
+            score -= 5; // Slight penalty for excessive sleep, could indicate underlying issues
+            alerts.add("Excessive total sleep hours.");
+            suggestions.add("Consistently sleeping too much might indicate underlying health issues or poor sleep quality. Review your sleep habits or consult a professional.");
         }
 
-        // Rule 2: IF sleep_efficiency < 85 THEN deduct 5 points
-        if (sleepData.getSleepEfficiency() < 85) {
-            shieldScore -= 5;
-            alerts.add("Low sleep efficiency");
-            suggestions.add("Improve sleep efficiency by maintaining a consistent sleep schedule and creating a conducive sleep environment.");
+        // 2. Sleep Efficiency
+        // Ideal: >= 85%
+        if (sleepData.getSleepEfficiency() < 75) {
+            score -= 20;
+            alerts.add("Very low sleep efficiency.");
+            suggestions.add("Focus on improving your sleep efficiency by limiting time awake in bed. Only go to bed when sleepy, and get out of bed if you can't sleep after 20 minutes.");
+        } else if (sleepData.getSleepEfficiency() < 85) {
+            score -= 10;
+            alerts.add("Low sleep efficiency.");
+            suggestions.add("Improve sleep efficiency by maintaining a consistent sleep schedule, avoiding stimulants before bed, and creating a conducive sleep environment.");
         }
 
-        // Rule 3: IF REM_percentage < 15 THEN deduct 5 points
+        // 3. REM Percentage
+        // Ideal: 20-25% of total sleep
+        // For 7 hours sleep (420 min), 20% REM is 84 min, 25% is 105 min.
+        double expectedRemMin = sleepData.getTotalSleepHours() * 60 * 0.20; // 20% of total sleep in minutes
+        double actualRemMin = sleepData.getTotalSleepHours() * 60 * (sleepData.getRemPercentage() / 100.0);
+
         if (sleepData.getRemPercentage() < 15) {
-            shieldScore -= 5;
-            alerts.add("Low REM sleep percentage");
-            suggestions.add("To increase REM sleep, prioritize consistent sleep, reduce alcohol intake before bed, and manage stress.");
+            score -= 15;
+            alerts.add("Low REM sleep percentage.");
+            suggestions.add("To increase REM sleep, prioritize consistent sleep, reduce alcohol intake before bed, and manage stress through relaxation techniques like meditation.");
+        } else if (sleepData.getRemPercentage() > 30) { // Can indicate issues if too high
+            score -= 5;
+            alerts.add("High REM sleep percentage.");
+            suggestions.add("While not always negative, unusually high REM might be related to sleep disorders or certain medications. Monitor your sleep patterns and consider professional advice.");
         }
 
-        // Rule 4: IF age > 50 AND sleep_hours < 6 THEN deduct 5 more points
-        // Note: This rule explicitly checks 'sleep_hours < 6' again, which aligns with the prompt.
-        if (sleepData.getAge() > 50 && sleepData.getTotalSleepHours() < 6) {
-            shieldScore -= 5;
-            alerts.add("Age-related insufficient sleep");
-            suggestions.add("Older adults may require slightly less sleep, but consistently less than 6 hours can still be detrimental. Consult a doctor if sleep issues persist.");
+        // 4. Age and Sex Specific Adjustments
+        // Age: Sleep needs change with age.
+        if (sleepData.getAge() < 18) { // Assuming adult context, so penalize if too young but still provide score
+            alerts.add("Age out of typical adult range. Sleep needs for youth differ.");
+            suggestions.add("This score is optimized for adults (18+). Younger individuals have higher sleep needs.");
+        } else if (sleepData.getAge() >= 65) {
+            if (sleepData.getTotalSleepHours() > 8) { // Older adults might need slightly less sleep
+                score -= 5; // Slight penalty if too much sleep for older adults
+                alerts.add("Older adult, potentially excessive sleep.");
+                suggestions.add("While sleep quality is key, consistently high sleep duration in older adults can sometimes indicate underlying issues. Discuss with your doctor if concerned.");
+            }
         }
 
-        // Ensure shield_score does not go below 0
-        shieldScore = Math.max(0, shieldScore);
+        // Sex: Some subtle differences, though less impactful than other factors for overall score
+        // (No direct score deduction for sex, but could be used for personalized suggestions or ML features)
+        if ("female".equalsIgnoreCase(sleepData.getSex()) && sleepData.getTotalSleepHours() < 7) {
+            suggestions.add("Women might experience hormonal influences on sleep; maintaining consistent sleep hygiene is especially important.");
+        }
 
-        // Calculate bio_age_delta based on the final shieldScore
+        // --- Bio-Age Delta Calculation ---
         String bioAgeDelta;
-        if (shieldScore >= 90) {
-            bioAgeDelta = "-1.0";
-        } else if (shieldScore >= 80) {
-            bioAgeDelta = "+0.5";
-        } else if (shieldScore >= 70) {
-            bioAgeDelta = "+1.5";
+        if (score >= 90) {
+            bioAgeDelta = String.format("%.1f", -Math.abs(100 - score) / 10.0); // Up to -1 year for excellent sleep
+        } else if (score >= 80) {
+            bioAgeDelta = String.format("%.1f", -(Math.random() * 0.5)); // Slightly younger or same
+        } else if (score >= 60) {
+            bioAgeDelta = String.format("%.1f", (100 - score) / 10.0); // 1-4 years older
         } else {
-            bioAgeDelta = "+2.5";
+            bioAgeDelta = String.format("%.1f", (100 - score) / 5.0); // Significantly older
         }
 
-        return SleepScoreResponse.builder()
-                .shieldScore(shieldScore)
-                .bioAgeDelta(bioAgeDelta)
-                .alerts(alerts)
-                .suggestions(suggestions)
-                .build();
+        // Ensure score doesn't go below 0
+        score = Math.max(0, score);
+
+        return new SleepScoreResponse(score, bioAgeDelta, alerts, suggestions);
     }
 }
